@@ -1,6 +1,8 @@
+const dotenv = require("dotenv");
 const express = require("express");
 const cors = require("cors");
-const dotenv = require("dotenv");
+const admin = require("firebase-admin");
+const { getAuth } = require("firebase-admin/auth");
 
 // Load environment variables
 dotenv.config();
@@ -11,6 +13,16 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Firebase
+ 
+const decodedKey = Buffer.from(process.env.FB_SERVICE_KEY, "base64").toString("utf-8");
+
+// var serviceAccount = require("./microEarnServiceAccountKey.json");
+var serviceAccount = JSON.parse(decodedKey);
+admin.initializeApp({
+	credential: admin.credential.cert(serviceAccount),
+});
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri = process.env.MONGODB_URI;
@@ -23,6 +35,22 @@ const client = new MongoClient(uri, {
 		deprecationErrors: true,
 	},
 });
+
+const verifyFirebaseToken = async (req, res, next) => {
+	const authHeader = req.headers?.authorization;
+	if (!authHeader || !authHeader.startsWith("Bearer ")) {
+		return res.status(401).send({ message: "Unauthorized access" });
+	}
+	const token = authHeader.split(" ")[1];
+	try {
+		const decoded = await getAuth().verifyIdToken(token);
+		console.log("decoded token", decoded);
+		req.decoded = decoded;
+		next();
+	} catch (err) {
+		return res.status(401).send({ message: "Unauthorized access" });
+	}
+};
 
 async function run() {
 	try {
@@ -50,10 +78,39 @@ async function run() {
 				return res.send(result);
 			}
 
-            console.log("Creating New User...");
-            const result = await usersCollection.insertOne(userData);
-            console.log("User Created Successfully!");
-            res.send(result);
+			userData.microCoins = userData?.role === "Worker" ? 10 : 50;
+			console.log("Creating New User...");
+			const result = await usersCollection.insertOne(userData);
+			console.log("User Created Successfully!");
+			res.send(result);
+		});
+
+		// get user role
+		app.get("/role/user", verifyFirebaseToken, async (req, res) => {
+			const email = req.decoded.email;
+			if (!email) {
+				return res.status(403).send({ message: "Forbidden access" });
+			}
+			const query = { email: email };
+			const user = await usersCollection.findOne(query);
+			if (!user) {
+				return res.status(404).send({ message: "User Not Found" });
+			}
+			res.send({ role: user?.role });
+		});
+
+		// get available Coins
+		app.get("/available-coins", verifyFirebaseToken, async (req, res) => {
+			const email = req.decoded.email;
+			if (!email) {
+				return res.status(403).send({ message: "Forbidden access" });
+			} 
+			const query = { email: email };
+			const user = await usersCollection.findOne(query);
+			if (!user) {
+				return res.status(404).send({ message: "User Not Found" });
+			}
+			res.send({ microCoins: user?.microCoins });
 		});
 
 		// Send a ping to confirm a successful connection
