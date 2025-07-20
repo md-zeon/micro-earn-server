@@ -11,7 +11,10 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+	origin: "http://localhost:5173", // frontend URL
+	credentials: true,              // allow cookies and auth headers
+}));
 app.use(express.json());
 
 // Firebase
@@ -86,7 +89,7 @@ async function run() {
 		});
 
 		// get user role
-		app.get("/role/user", verifyFirebaseToken, async (req, res) => {
+		app.get("/user/role", verifyFirebaseToken, async (req, res) => {
 			const email = req.decoded.email;
 			if (!email) {
 				return res.status(403).send({ message: "Forbidden access" });
