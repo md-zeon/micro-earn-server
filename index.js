@@ -187,7 +187,32 @@ async function run() {
 			}
 		});
 
+		// Update Task
+		app.patch("/tasks/:id", verifyFirebaseToken, verifyBuyer, async (req, res) => {
+			try {
+				const taskId = req.params.id;
+				const updates = req.body;
+				const filter = { _id: new ObjectId(taskId) };
+				const task = await tasksCollection.findOne(filter);
+				if (!task) {
+					return res.status(404).send({ message: "Task not found!" });
+				}
+				const updateDoc = {
+					$set: {
+						task_title: updates.task_title,
+						task_detail: updates.task_detail,
+						submission_info: updates.submission_info,
+						updatedAt: new Date().toISOString(),
+					},
+				};
 
+				const result = await tasksCollection.updateOne(filter, updateDoc);
+				res.send(result);
+			} catch (err) {
+				console.error("Update Task Error:", err);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
 
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
