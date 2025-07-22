@@ -132,6 +132,20 @@ async function run() {
 			res.send({ microCoins: user?.microCoins });
 		});
 
+		// Update Micro Coins (increase/decrease)
+		app.patch("/update-coins", verifyFirebaseToken, async (req, res) => {
+			const email = req.decoded.email;
+			const { coinsToUpdate, status } = req.body;
+			const filter = { email: email };
+			const updateDoc = {
+				$inc: {
+					microCoins: status === "decrease" ? -coinsToUpdate : coinsToUpdate,
+				},
+			};
+			const result = await usersCollection.updateOne(filter, updateDoc);
+			res.send(result);
+		});
+
 		// Create New Task
 		app.post("/tasks", verifyFirebaseToken, verifyBuyer, async (req, res) => {
 			try {
