@@ -68,7 +68,7 @@ async function run() {
 			try {
 				const userEmail = req.decoded?.email;
 				const user = await usersCollection.findOne({ email: userEmail });
-				if (!user || user.role !== "Buyer") {
+				if (!user || user.role !== "buyer") {
 					return res.status(403).send({ message: "Forbidden: Buyer access only" });
 				}
 				next();
@@ -81,7 +81,7 @@ async function run() {
 		// Add New User
 		app.post("/user", async (req, res) => {
 			const userData = req.body;
-			userData.role = userData?.role || "Worker";
+			userData.role = userData?.role || "worker";
 			userData.createdAt = new Date().toISOString();
 			userData.lastLoggedInAt = new Date().toISOString();
 			const query = { email: userData?.email };
@@ -97,7 +97,7 @@ async function run() {
 				return res.send(result);
 			}
 
-			userData.microCoins = userData?.role === "Worker" ? 10 : 50;
+			userData.microCoins = userData?.role === "worker" ? 10 : 50;
 			console.log("Creating New User...");
 			const result = await usersCollection.insertOne(userData);
 			console.log("User Created Successfully!");
@@ -146,7 +146,7 @@ async function run() {
 			res.send(result);
 		});
 
-		// Create New Task
+		// Create New Task (Buyer)
 		app.post("/tasks", verifyFirebaseToken, verifyBuyer, async (req, res) => {
 			try {
 				const newTask = req.body;
@@ -160,6 +160,13 @@ async function run() {
 				console.log("Error creating task:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
+		});
+
+		// GET buyer's tasks (sorted by deadline DESC)
+		app.get("/my-tasks", verifyFirebaseToken, verifyBuyer, async (req, res) => {
+			const email = req.decoded?.email;
+			const tasks = await tasksCollection.find({ buyer_email: email }).sort({ completion_deadline: -1 }).toArray();
+			res.send(tasks);
 		});
 
 		// Send a ping to confirm a successful connection
