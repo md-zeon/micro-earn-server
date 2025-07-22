@@ -1,24 +1,26 @@
 const dotenv = require("dotenv");
+dotenv.config();
 const express = require("express");
 const cors = require("cors");
 const admin = require("firebase-admin");
 const { getAuth } = require("firebase-admin/auth");
 
 // Load environment variables
-dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors({
-	origin: "http://localhost:5173", // frontend URL
-	credentials: true,              // allow cookies and auth headers
-}));
+app.use(
+	cors({
+		origin: "http://localhost:5173", // frontend URL
+		credentials: true, // allow cookies and auth headers
+	}),
+);
 app.use(express.json());
 
 // Firebase
- 
+
 const decodedKey = Buffer.from(process.env.FB_SERVICE_KEY, "base64").toString("utf-8");
 
 // var serviceAccount = require("./microEarnServiceAccountKey.json");
@@ -47,7 +49,6 @@ const verifyFirebaseToken = async (req, res, next) => {
 	const token = authHeader.split(" ")[1];
 	try {
 		const decoded = await getAuth().verifyIdToken(token);
-		console.log("decoded token", decoded);
 		req.decoded = decoded;
 		next();
 	} catch (err) {
@@ -58,9 +59,24 @@ const verifyFirebaseToken = async (req, res, next) => {
 async function run() {
 	try {
 		// Connect the client to the server	(optional starting in v4.7)
-		// await client.connect();
+		await client.connect();
 		const microEarnDB = client.db("microEarnDB");
 		const usersCollection = microEarnDB.collection("users");
+		const tasksCollection = microEarnDB.collection("tasks");
+
+		const verifyBuyer = async (req, res, next) => {
+			try {
+				const userEmail = req.decoded?.email;
+				const user = await usersCollection.findOne({ email: userEmail });
+				if (!user || user.role !== "Buyer") {
+					return res.status(403).send({ message: "Forbidden: Buyer access only" });
+				}
+				next();
+			} catch (error) {
+				console.error("verifyBuyer error:", error);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		};
 
 		// Add New User
 		app.post("/user", async (req, res) => {
@@ -107,13 +123,29 @@ async function run() {
 			const email = req.decoded.email;
 			if (!email) {
 				return res.status(403).send({ message: "Forbidden access" });
-			} 
+			}
 			const query = { email: email };
 			const user = await usersCollection.findOne(query);
 			if (!user) {
 				return res.status(404).send({ message: "User Not Found" });
 			}
 			res.send({ microCoins: user?.microCoins });
+		});
+
+		// Create New Task
+		app.post("/tasks", verifyFirebaseToken, verifyBuyer, async (req, res) => {
+			try {
+				const newTask = req.body;
+				console.log("New Task Payload:", newTask);
+				newTask.createdAt = new Date().toISOString();
+				newTask.status = "active";
+				const result = await tasksCollection.insertOne(newTask);
+				console.log("Task created successfully:", result);
+				res.send(result);
+			} catch (err) {
+				console.log("Error creating task:", err);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
 		});
 
 		// Send a ping to confirm a successful connection
