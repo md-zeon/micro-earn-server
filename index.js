@@ -236,7 +236,7 @@ async function run() {
 		});
 
 		// Save payment info
-		app.post("/payments", verifyFirebaseToken, async (req, res) => {
+		app.post("/payments", verifyFirebaseToken, verifyBuyer, async (req, res) => {
 			try {
 				const paymentData = req.body;
 				paymentData.createdAt = new Date().toISOString();
@@ -246,6 +246,13 @@ async function run() {
 				console.error("Error saving payment:", error);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
+		});
+
+		// get All Payments
+		app.get("/payments", verifyFirebaseToken, verifyBuyer, async (req, res) => {
+			const email = req.decoded?.email;
+			const payments = await paymentsCollection.find({ buyer_email: email }).sort({ payment_date: -1 }).toArray();
+			res.send(payments);
 		});
 
 		// Send a ping to confirm a successful connection
