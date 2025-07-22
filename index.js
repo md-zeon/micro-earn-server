@@ -29,7 +29,7 @@ admin.initializeApp({
 	credential: admin.credential.cert(serviceAccount),
 });
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = process.env.MONGODB_URI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -152,6 +152,7 @@ async function run() {
 				const newTask = req.body;
 				console.log("New Task Payload:", newTask);
 				newTask.createdAt = new Date().toISOString();
+				newTask.updatedAt = new Date().toISOString();
 				newTask.status = "active";
 				const result = await tasksCollection.insertOne(newTask);
 				console.log("Task created successfully:", result);
@@ -165,9 +166,28 @@ async function run() {
 		// GET buyer's tasks (sorted by deadline DESC)
 		app.get("/my-tasks", verifyFirebaseToken, verifyBuyer, async (req, res) => {
 			const email = req.decoded?.email;
-			const tasks = await tasksCollection.find({ buyer_email: email }).sort({ completion_deadline: -1 }).toArray();
+			const tasks = await tasksCollection.find({ posted_by: email }).sort({ completion_deadline: -1 }).toArray();
 			res.send(tasks);
 		});
+
+		// Delete Task
+		app.delete("/tasks/:id", verifyFirebaseToken, verifyBuyer, async (req, res) => {
+			try {
+				const taskId = req.params.id;
+				const query = { _id: new ObjectId(taskId) };
+				const task = await tasksCollection.findOne(query);
+				if (!task) {
+					return res.status(404).send({ message: "Task not found!" });
+				}
+				const result = await tasksCollection.deleteOne(query);
+				res.send(result);
+			} catch (err) {
+				console.error("Delete Task Error:", err);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
+
 
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
