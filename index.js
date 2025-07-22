@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const admin = require("firebase-admin");
 const { getAuth } = require("firebase-admin/auth");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 // Load environment variables
 
@@ -63,6 +64,7 @@ async function run() {
 		const microEarnDB = client.db("microEarnDB");
 		const usersCollection = microEarnDB.collection("users");
 		const tasksCollection = microEarnDB.collection("tasks");
+		const paymentsCollection = microEarnDB.collection("payments");
 
 		const verifyBuyer = async (req, res, next) => {
 			try {
@@ -210,6 +212,38 @@ async function run() {
 				res.send(result);
 			} catch (err) {
 				console.error("Update Task Error:", err);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
+		// Payment Intent
+		app.post("/create-payment-intent", verifyFirebaseToken, async (req, res) => {
+			const { amount } = req.body;
+			const paymentAmount = parseInt(amount * 100);
+			try {
+				const paymentIntent = await stripe.paymentIntents.create({
+					amount: paymentAmount,
+					currency: "usd",
+					payment_method_types: ["card"],
+				});
+				res.send({
+					clientSecret: paymentIntent.client_secret,
+				});
+			} catch (error) {
+				console.error("Error creating payment intent:", error);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
+		// Save payment info
+		app.post("/payments", verifyFirebaseToken, async (req, res) => {
+			try {
+				const paymentData = req.body;
+				paymentData.createdAt = new Date().toISOString();
+				const result = await paymentsCollection.insertOne(paymentData);
+				res.send(result);
+			} catch (error) {
+				console.error("Error saving payment:", error);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
