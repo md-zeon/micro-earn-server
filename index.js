@@ -329,13 +329,13 @@ async function run() {
 			res.send(result);
 		});
 
-		// Get submissions
+		// Get submissions (Worker)
 		app.get("/submissions", verifyFirebaseToken, verifyWorker, async (req, res) => {
 			try {
 				const worker_email = req.decoded?.email;
 				const query = { worker_email };
-				const submissions = await submissionsCollection.find(query).toArray();
-				res.send(submissions);
+				const result = await submissionsCollection.find(query).toArray();
+				res.send(result);
 			} catch (err) {
 				console.error("Error fetching submissions:", err);
 				res.status(500).send({ message: "Internal Server Error" });
@@ -385,6 +385,18 @@ async function run() {
 				res.send({ result });
 			} catch (err) {
 				console.error("Reject Submission Error:", err);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
+		// Get all submissions for a buyer's tasks
+		app.get("/buyer-submissions", verifyFirebaseToken, verifyBuyer, async (req, res) => {
+			try {
+				const email = req.decoded?.email;
+				const result = await submissionsCollection.find({ buyer_email: email }).toArray();
+				res.send(result);
+			} catch (err) {
+				console.error("Error fetching buyer submissions:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
