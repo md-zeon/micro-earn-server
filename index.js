@@ -80,6 +80,20 @@ async function run() {
 			}
 		};
 
+		const verifyWorker = async (req, res, next) => {
+			try {
+				const userEmail = req.decoded?.email;
+				const user = await usersCollection.findOne({ email: userEmail });
+				if (!user || user.role !== "worker") {
+					return res.status(403).send({ message: "Forbidden: Worker access only" });
+				}
+				next();
+			} catch (error) {
+				console.error("verifyWorker error:", error);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		};
+
 		// Add New User
 		app.post("/user", async (req, res) => {
 			const userData = req.body;
@@ -153,6 +167,7 @@ async function run() {
 			try {
 				const newTask = req.body;
 				console.log("New Task Payload:", newTask);
+				newTask.total_workers = newTask?.required_workers;
 				newTask.createdAt = new Date().toISOString();
 				newTask.updatedAt = new Date().toISOString();
 				newTask.status = "active";
