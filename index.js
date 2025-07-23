@@ -96,6 +96,20 @@ async function run() {
 			}
 		};
 
+		const verifyAdmin = async (req, res, next) => {
+			try {
+				const userEmail = req.decoded?.email;
+				const user = await usersCollection.findOne({ email: userEmail });
+				if (!user || user.role !== "admin") {
+					return res.status(403).send({ message: "Forbidden: Admin access only" });
+				}
+				next();
+			} catch (error) {
+				console.error("verifyAdmin error:", error);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		};
+
 		// Add New User
 		app.post("/user", async (req, res) => {
 			const userData = req.body;
@@ -399,6 +413,17 @@ async function run() {
 				console.error("Error fetching buyer submissions:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
+		});
+
+		app.get("/admin/stats", verifyFirebaseToken, verifyAdmin, async (req, res) => {
+			const workers = await usersCollection.countDocuments({ role: "Worker" });
+			const buyers = await usersCollection.countDocuments({ role: "Buyer" });
+			const allUsers = await usersCollection.find().toArray();
+			const totalCoins = allUsers.reduce((sum, u) => sum + (u.coins || 0), 0);
+			const payments = await paymentsCollection.find().toArray();
+			const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
+
+			res.send({ totalWorkers: workers, totalBuyers: buyers, totalCoins, totalPayments });
 		});
 
 		// Send a ping to confirm a successful connection
