@@ -328,6 +328,19 @@ async function run() {
 			res.send(result);
 		});
 
+		// Get submissions
+		app.get("/submissions", verifyFirebaseToken, verifyWorker, async (req, res) => {
+			try {
+				const worker_email = req.decoded?.email;
+				const query = { worker_email };
+				const submissions = await submissionsCollection.find(query).toArray();
+				res.send(submissions);
+			} catch (err) {
+				console.error("Error fetching submissions:", err);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
 		console.log("Pinged your deployment. You successfully connected to MongoDB!");
