@@ -270,6 +270,17 @@ async function run() {
 			res.send(payments);
 		});
 
+		// Worker Routes
+		app.get("/tasks-for-worker", verifyFirebaseToken, verifyWorker, async (req, res) => {
+			try {
+				const tasks = await tasksCollection.find({ required_workers: { $gt: 0 } }).toArray();
+				res.send(tasks);
+			} catch (err) {
+				console.error("Error fetching tasks for worker:", err);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
 		console.log("Pinged your deployment. You successfully connected to MongoDB!");
