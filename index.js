@@ -65,6 +65,7 @@ async function run() {
 		const usersCollection = microEarnDB.collection("users");
 		const tasksCollection = microEarnDB.collection("tasks");
 		const paymentsCollection = microEarnDB.collection("payments");
+		const submissionsCollection = microEarnDB.collection("submissions");
 
 		const verifyBuyer = async (req, res, next) => {
 			try {
@@ -280,6 +281,24 @@ async function run() {
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
+
+		// Get single task by ID
+		app.get("/tasks/:id", verifyFirebaseToken, async (req, res) => {
+			try {
+				const taskId = req.params.id;
+				const query = { _id: new ObjectId(taskId) };
+				const task = await tasksCollection.findOne(query);
+				if (!task) {
+					return res.status(404).send({ message: "Task not found!" });
+				}
+				res.send(task);
+			} catch (err) {
+				console.error("Error fetching single task:", err);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
+
 
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
