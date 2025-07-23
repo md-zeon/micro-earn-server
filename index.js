@@ -66,6 +66,7 @@ async function run() {
 		const tasksCollection = microEarnDB.collection("tasks");
 		const paymentsCollection = microEarnDB.collection("payments");
 		const submissionsCollection = microEarnDB.collection("submissions");
+		const withdrawalsCollection = microEarnDB.collection("withdrawals");
 
 		const verifyBuyer = async (req, res, next) => {
 			try {
@@ -337,6 +338,21 @@ async function run() {
 				res.send(submissions);
 			} catch (err) {
 				console.error("Error fetching submissions:", err);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
+		// Create New WithDrawal
+		app.post("/withdrawals", verifyFirebaseToken, verifyWorker, async (req, res) => {
+			try {
+				const newWithdrawal = req.body;
+				console.log("New Withdrawal Payload:", newWithdrawal);
+				newWithdrawal.status = "pending";
+				// Insert the withdrawal
+				const result = await withdrawalsCollection.insertOne(newWithdrawal);
+				res.send(result);
+			} catch (err) {
+				console.error("Error saving withdrawal:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
