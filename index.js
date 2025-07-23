@@ -298,7 +298,35 @@ async function run() {
 			}
 		});
 
+		// Submit Task (Worker)
+		app.post("/submissions", verifyFirebaseToken, verifyWorker, async (req, res) => {
+			try {
+				const newSubmission = req.body;
+				console.log("New Submission Payload:", newSubmission);
+				newSubmission.updatedAt = new Date().toISOString();
+				newSubmission.status = "pending";
+				// Insert the submission
+				const result = await submissionsCollection.insertOne(newSubmission);
+				res.send(result);
+			} catch (err) {
+				console.error("Error saving submission:", err);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
 
+		// Update Workers (increase/decrease)
+		app.patch("/update-workers/:id", verifyFirebaseToken, async (req, res) => {
+			const taskId = req.params.id;
+			const { status } = req.body;
+			const filter = { _id: new ObjectId(taskId) };
+			const updateDoc = {
+				$inc: {
+					required_workers: status === "decrease" ? -1 : 1,
+				},
+			};
+			const result = await tasksCollection.updateOne(filter, updateDoc);
+			res.send(result);
+		});
 
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
