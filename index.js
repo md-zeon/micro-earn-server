@@ -357,6 +357,19 @@ async function run() {
 			}
 		});
 
+		// Get Withdrawals
+		app.get('/withdrawals', verifyFirebaseToken, verifyWorker, async (req, res) => {
+			try {
+				const worker_email = req.decoded?.email;
+				const query = { worker_email };
+				const result = await withdrawalsCollection.find(query).toArray();
+				res.send(result);
+			} catch (err) {
+				console.error("Error fetching withdrawals:", err);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
 		console.log("Pinged your deployment. You successfully connected to MongoDB!");
