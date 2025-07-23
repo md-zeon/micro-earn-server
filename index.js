@@ -151,8 +151,8 @@ async function run() {
 		});
 
 		// Update Micro Coins (increase/decrease)
-		app.patch("/update-coins", verifyFirebaseToken, async (req, res) => {
-			const email = req.decoded.email;
+		app.patch("/update-coins/:email", verifyFirebaseToken, async (req, res) => {
+			const email = req.params.email;
 			const { coinsToUpdate, status } = req.body;
 			const filter = { email: email };
 			const updateDoc = {
@@ -358,7 +358,7 @@ async function run() {
 		});
 
 		// Get Withdrawals
-		app.get('/withdrawals', verifyFirebaseToken, verifyWorker, async (req, res) => {
+		app.get("/withdrawals", verifyFirebaseToken, verifyWorker, async (req, res) => {
 			try {
 				const worker_email = req.decoded?.email;
 				const query = { worker_email };
@@ -366,6 +366,25 @@ async function run() {
 				res.send(result);
 			} catch (err) {
 				console.error("Error fetching withdrawals:", err);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
+		// accept / reject submissions
+		app.patch("/submissions/status-update", verifyFirebaseToken, verifyBuyer, async (req, res) => {
+			try {
+				const { submissionId, status } = req.body;
+				const filter = { _id: new ObjectId(submissionId) };
+				const result = await submissionsCollection.updateOne(filter, {
+					$set: {
+						status: status,
+						updatedAt: new Date().toISOString(),
+					},
+				});
+
+				res.send({ result });
+			} catch (err) {
+				console.error("Reject Submission Error:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
