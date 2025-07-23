@@ -416,12 +416,12 @@ async function run() {
 		});
 
 		app.get("/admin/stats", verifyFirebaseToken, verifyAdmin, async (req, res) => {
-			const workers = await usersCollection.countDocuments({ role: "Worker" });
-			const buyers = await usersCollection.countDocuments({ role: "Buyer" });
+			const workers = await usersCollection.countDocuments({ role: "worker" });
+			const buyers = await usersCollection.countDocuments({ role: "buyer" });
 			const allUsers = await usersCollection.find().toArray();
-			const totalCoins = allUsers.reduce((sum, u) => sum + (u.coins || 0), 0);
+			const totalCoins = allUsers.reduce((sum, u) => sum + (u.microCoins || 0), 0);
 			const payments = await paymentsCollection.find().toArray();
-			const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
+			const totalPayments = payments.reduce((sum, p) => sum + p.amount_paid, 0);
 
 			res.send({ totalWorkers: workers, totalBuyers: buyers, totalCoins, totalPayments });
 		});
