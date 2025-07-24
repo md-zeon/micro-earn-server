@@ -558,6 +558,18 @@ async function run() {
 			}
 		});
 
+		// Top 6 workers
+		app.get("/top-workers", async (req, res) => {
+			const topWorkers = await usersCollection
+				.find({ role: "worker" })
+				.sort({ microCoins: -1 })
+				.limit(6)
+				.project({ name: 1, photoURL: 1, microCoins: 1 })
+				.toArray();
+
+			res.send(topWorkers);
+		});
+
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
 		console.log("Pinged your deployment. You successfully connected to MongoDB!");
