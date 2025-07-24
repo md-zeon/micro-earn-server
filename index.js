@@ -451,6 +451,19 @@ async function run() {
 			}
 		});
 
+		// get all users
+		app.get("/users", verifyFirebaseToken, verifyAdmin, async (req, res) => {
+			try {
+				const users = await usersCollection.find().toArray();
+				res.send(users);
+			} catch (err) {
+				res.status(500).send({ message: "Failed to get users: " + err.message });
+			}
+		});
+
+		// Update user role
+		
+
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
 		console.log("Pinged your deployment. You successfully connected to MongoDB!");
