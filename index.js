@@ -462,7 +462,32 @@ async function run() {
 		});
 
 		// Update user role
-		
+		app.patch("/update-role/user/:id", verifyFirebaseToken, verifyAdmin, async (req, res) => {
+			try {
+				const userId = req.params.id;
+				const { role } = req.body;
+				const filter = { _id: new ObjectId(userId) };
+				const updateDoc = {
+					$set: { role: role, updatedAt: new Date().toISOString() },
+				};
+				const result = await usersCollection.updateOne(filter, updateDoc);
+				res.send(result);
+			} catch (err) {
+				res.status(500).send({ message: "Failed to update user role: " + err.message });
+			}
+		});
+
+		// delete a user
+		app.delete("/user/:id", verifyFirebaseToken, verifyAdmin, async (req, res) => {
+			try {
+				const userId = req.params.id;
+				const filter = { _id: new ObjectId(userId) };
+				const result = await usersCollection.deleteOne(filter);
+				res.send(result);
+			} catch (err) {
+				res.status(500).send({ message: "Failed to delete user: " + err.message });
+			}
+		});
 
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
