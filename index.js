@@ -510,6 +510,27 @@ async function run() {
 			}
 		});
 
+		// GET ALL TASKS
+		app.get("/admin/tasks", verifyFirebaseToken, verifyAdmin, async (req, res) => {
+			try {
+				const tasks = await tasksCollection.find().toArray();
+				res.send(tasks);
+			} catch (err) {
+				res.status(500).send({ message: "Failed to get tasks: " + err.message });
+			}
+		});
+
+		// DELETE task by Admin
+		app.delete("/admin/task/:id", verifyFirebaseToken, verifyAdmin, async (req, res) => {
+			try {
+				const id = req.params.id;
+				const result = await tasksCollection.deleteOne({ _id: new ObjectId(id) });
+				res.send(result);
+			} catch (err) {
+				res.status(500).send({ message: "Failed to delete task: " + err.message });
+			}
+		});
+
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
 		console.log("Pinged your deployment. You successfully connected to MongoDB!");
