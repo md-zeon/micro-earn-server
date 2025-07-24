@@ -429,13 +429,25 @@ async function run() {
 		// GET /admin/withdraw-requests
 		app.get("/admin/withdraw-requests", verifyFirebaseToken, verifyAdmin, async (req, res) => {
 			try {
-				const requests = await withdrawalsCollection
-					.find({ status: "pending" })
-					.sort({ withdraw_date: -1 })
-					.toArray();
+				const requests = await withdrawalsCollection.find({ status: "pending" }).sort({ withdraw_date: -1 }).toArray();
 				res.send(requests);
 			} catch (err) {
 				res.status(500).send({ message: "Failed to load withdraw requests" });
+			}
+		});
+
+		app.patch("/admin/approve-withdraw/:id", verifyFirebaseToken, verifyAdmin, async (req, res) => {
+			try {
+				const withdrawId = req.params.id;
+				const { status } = req.body;
+				const filter = { _id: new ObjectId(withdrawId) };
+				const updateDoc = {
+					$set: { status: status, updatedAt: new Date().toISOString() },
+				};
+				const result = await withdrawalsCollection.updateOne(filter, updateDoc);
+				res.send(result);
+			} catch (err) {
+				res.status(500).send({ message: "Failed to approve withdraw request: " + err.message });
 			}
 		});
 
