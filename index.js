@@ -450,8 +450,9 @@ async function run() {
 		// GET /admin/withdraw-requests
 		app.get("/admin/withdraw-requests", verifyFirebaseToken, verifyAdmin, async (req, res) => {
 			try {
-				const requests = await withdrawalsCollection.find({ status: "pending" }).sort({ withdraw_date: -1 }).toArray();
-				res.send(requests);
+				const pendingRequests = await withdrawalsCollection.find({ status: "pending" }).sort({ withdraw_date: -1 }).toArray();
+				const approvedRequests = await withdrawalsCollection.find({ status: "approved" }).sort({ withdraw_date: -1}).toArray();
+				res.send({pendingRequests, approvedRequests});
 			} catch (err) {
 				res.status(500).send({ message: "Failed to load withdraw requests" });
 			}
