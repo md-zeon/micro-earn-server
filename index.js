@@ -331,16 +331,37 @@ async function run() {
 
 		// Update Workers (increase/decrease)
 		app.patch("/update-workers/:id", verifyFirebaseToken, async (req, res) => {
-			const taskId = req.params.id;
-			const { status } = req.body;
-			const filter = { _id: new ObjectId(taskId) };
-			const updateDoc = {
-				$inc: {
-					required_workers: status === "decrease" ? -1 : 1,
-				},
-			};
-			const result = await tasksCollection.updateOne(filter, updateDoc);
-			res.send(result);
+			try {
+				const taskId = req.params.id;
+				const { status } = req.body;
+
+				const filter = { _id: new ObjectId(taskId) };
+				const task = await tasksCollection.findOne(filter);
+
+				if (!task) {
+					return res.status(404).send({ message: "Task not found" });
+				}
+
+				let newCount = task.required_workers;
+
+				if (status === "decrease") newCount--;
+				else if (status === "increase") newCount++;
+
+				// Prevent negative workers
+				if (newCount < 0) newCount = 0;
+
+				const updateDoc = {
+					$set: {
+						required_workers: newCount,
+						status: newCount === 0 ? "completed" : "active",
+					},
+				};
+
+				const result = await tasksCollection.updateOne(filter, updateDoc);
+				res.send(result);
+			} catch (err) {
+				res.status(500).send({ message: "Failed to update workers: " + err.message });
+			}
 		});
 
 		// Get submissions (Worker)
