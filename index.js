@@ -450,9 +450,15 @@ async function run() {
 		// GET /admin/withdraw-requests
 		app.get("/admin/withdraw-requests", verifyFirebaseToken, verifyAdmin, async (req, res) => {
 			try {
-				const pendingRequests = await withdrawalsCollection.find({ status: "pending" }).sort({ withdraw_date: -1 }).toArray();
-				const approvedRequests = await withdrawalsCollection.find({ status: "approved" }).sort({ withdraw_date: -1}).toArray();
-				res.send({pendingRequests, approvedRequests});
+				const pendingRequests = await withdrawalsCollection
+					.find({ status: "pending" })
+					.sort({ withdraw_date: -1 })
+					.toArray();
+				const approvedRequests = await withdrawalsCollection
+					.find({ status: "approved" })
+					.sort({ withdraw_date: -1 })
+					.toArray();
+				res.send({ pendingRequests, approvedRequests });
 			} catch (err) {
 				res.status(500).send({ message: "Failed to load withdraw requests" });
 			}
@@ -525,7 +531,27 @@ async function run() {
 		app.delete("/admin/task/:id", verifyFirebaseToken, verifyAdmin, async (req, res) => {
 			try {
 				const id = req.params.id;
-				const result = await tasksCollection.deleteOne({ _id: new ObjectId(id) });
+				const query = { _id: new ObjectId(id) };
+
+				// Get the task
+				const task = await tasksCollection.findOne(query);
+				if (!task) return res.status(404).send({ message: "Task not found" });
+
+				// If task is active, refund buyer
+				if (task.status === "active") {
+					const buyer_email = task.posted_by;
+					const total_amount = task.required_workers * task.payable_amount;
+
+					// Fetch buyer
+					const buyer = await usersCollection.findOne({ email: buyer_email });
+					if (buyer) {
+						const updatedCoins = (buyer.microCoins || 0) + total_amount;
+						await usersCollection.updateOne({ email: buyer_email }, { $set: { microCoins: updatedCoins } });
+					}
+				}
+
+				// Delete the task
+				const result = await tasksCollection.deleteOne(query);
 				res.send(result);
 			} catch (err) {
 				res.status(500).send({ message: "Failed to delete task: " + err.message });
