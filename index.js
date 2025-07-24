@@ -426,6 +426,19 @@ async function run() {
 			res.send({ totalWorkers: workers, totalBuyers: buyers, totalCoins, totalPayments });
 		});
 
+		// GET /admin/withdraw-requests
+		app.get("/admin/withdraw-requests", verifyFirebaseToken, verifyAdmin, async (req, res) => {
+			try {
+				const requests = await withdrawalsCollection
+					.find({ status: "pending" })
+					.sort({ withdraw_date: -1 })
+					.toArray();
+				res.send(requests);
+			} catch (err) {
+				res.status(500).send({ message: "Failed to load withdraw requests" });
+			}
+		});
+
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
 		console.log("Pinged your deployment. You successfully connected to MongoDB!");
