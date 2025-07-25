@@ -45,7 +45,7 @@ const client = new MongoClient(uri, {
 const verifyFirebaseToken = async (req, res, next) => {
 	const authHeader = req.headers?.authorization;
 	if (!authHeader || !authHeader.startsWith("Bearer ")) {
-		return res.status(401).send({ message: "Unauthorized access" });
+		return res.status(401).send({ message: "Unauthorized: No token provided" });
 	}
 	const token = authHeader.split(" ")[1];
 	try {
@@ -53,7 +53,7 @@ const verifyFirebaseToken = async (req, res, next) => {
 		req.decoded = decoded;
 		next();
 	} catch (err) {
-		return res.status(401).send({ message: "Unauthorized access" });
+		return res.status(400).send({ message: "Invalid token" });
 	}
 };
 
@@ -67,6 +67,7 @@ async function run() {
 		const paymentsCollection = microEarnDB.collection("payments");
 		const submissionsCollection = microEarnDB.collection("submissions");
 		const withdrawalsCollection = microEarnDB.collection("withdrawals");
+		const notificationsCollection = microEarnDB.collection("notifications");
 
 		const verifyBuyer = async (req, res, next) => {
 			try {
@@ -317,11 +318,19 @@ async function run() {
 		app.post("/submissions", verifyFirebaseToken, verifyWorker, async (req, res) => {
 			try {
 				const newSubmission = req.body;
-				console.log("New Submission Payload:", newSubmission);
 				newSubmission.updatedAt = new Date().toISOString();
 				newSubmission.status = "pending";
 				// Insert the submission
 				const result = await submissionsCollection.insertOne(newSubmission);
+
+				// Notify buyer
+				await notificationsCollection.insertOne({
+					message: `You have a new submission for "${newSubmission.task_title}".`,
+					toEmail: newSubmission.buyer_email,
+					actionRoute: "/dashboard",
+					time: new Date(),
+				});
+
 				res.send(result);
 			} catch (err) {
 				console.error("Error saving submission:", err);
@@ -410,16 +419,37 @@ async function run() {
 			try {
 				const { submissionId, status } = req.body;
 				const filter = { _id: new ObjectId(submissionId) };
+				const submission = await submissionsCollection.findOne(filter);
+				if (!submission) return res.status(404).send({ message: "Submission not found!" });
+
 				const result = await submissionsCollection.updateOne(filter, {
 					$set: {
-						status: status,
+						status,
 						updatedAt: new Date().toISOString(),
 					},
 				});
 
+				// Fetch task for details
+				const task = await tasksCollection.findOne({ _id: new ObjectId(submission.task_id) });
+				if (task && submission.worker_email) {
+					let message = "";
+					if (status === "approved") {
+						message = `You have earned ${task.payable_amount} coins from ${submission.buyer_name} for completing "${task.task_title}".`;
+					} else if (status === "rejected") {
+						message = `Your submission for "${task.task_title}" was rejected by ${submission.buyer_name}.`;
+					}
+
+					await notificationsCollection.insertOne({
+						message,
+						toEmail: submission.worker_email,
+						actionRoute: "/dashboard",
+						time: new Date(),
+					});
+				}
+
 				res.send({ result });
 			} catch (err) {
-				console.error("Reject Submission Error:", err);
+				console.error("Submission status update error:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
@@ -469,10 +499,24 @@ async function run() {
 				const withdrawId = req.params.id;
 				const { status } = req.body;
 				const filter = { _id: new ObjectId(withdrawId) };
+
+				// Update the withdrawal
 				const updateDoc = {
 					$set: { status: status, updatedAt: new Date().toISOString() },
 				};
 				const result = await withdrawalsCollection.updateOne(filter, updateDoc);
+
+				// Notify worker
+				const withdrawal = await withdrawalsCollection.findOne(filter);
+				if (withdrawal && status === "approved") {
+					await notificationsCollection.insertOne({
+						message: `Your withdrawal of ${withdrawal.withdrawal_amount}$ has been approved.`,
+						toEmail: withdrawal.worker_email,
+						actionRoute: "/dashboard",
+						time: new Date(),
+					});
+				}
+
 				res.send(result);
 			} catch (err) {
 				res.status(500).send({ message: "Failed to approve withdraw request: " + err.message });
@@ -568,6 +612,16 @@ async function run() {
 				.toArray();
 
 			res.send(topWorkers);
+		});
+
+		app.get("/notifications", verifyFirebaseToken, async (req, res) => {
+			try {
+				const email = req?.decoded?.email;
+				const result = await notificationsCollection.find({ toEmail: { email } }).sort({ time: -1 }).toArray();
+				res.send(result);
+			} catch (error) {
+				res.status(500).send({ message: "Failed to get notifications: " + error.message });
+			}
 		});
 
 		// Send a ping to confirm a successful connection
