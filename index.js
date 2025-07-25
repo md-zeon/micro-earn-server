@@ -12,12 +12,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(
-	cors({
-		origin: "http://localhost:5173", // frontend URL
-		credentials: true, // allow cookies and auth headers
-	}),
-);
+app.use(cors());
 app.use(express.json());
 
 // Firebase
@@ -60,7 +55,7 @@ const verifyFirebaseToken = async (req, res, next) => {
 async function run() {
 	try {
 		// Connect the client to the server	(optional starting in v4.7)
-		await client.connect();
+		// await client.connect();
 		const microEarnDB = client.db("microEarnDB");
 		const usersCollection = microEarnDB.collection("users");
 		const tasksCollection = microEarnDB.collection("tasks");
@@ -119,21 +114,21 @@ async function run() {
 			userData.lastLoggedInAt = new Date().toISOString();
 			const query = { email: userData?.email };
 			const userExists = await usersCollection.findOne(query);
-			console.log("Does User Exist? ", !!userExists ? "Yes" : "No");
+			// console.log("Does User Exist? ", !!userExists ? "Yes" : "No");
 			if (!!userExists) {
 				const result = await usersCollection.updateOne(query, {
 					$set: {
 						lastLoggedInAt: new Date().toISOString(),
 					},
 				});
-				console.log("updated User Last Login Time");
+				// console.log("updated User Last Login Time");
 				return res.send(result);
 			}
 
 			userData.microCoins = userData?.role === "worker" ? 10 : 50;
-			console.log("Creating New User...");
+			// console.log("Creating New User...");
 			const result = await usersCollection.insertOne(userData);
-			console.log("User Created Successfully!");
+			// console.log("User Created Successfully!");
 			res.send(result);
 		});
 
@@ -183,16 +178,16 @@ async function run() {
 		app.post("/tasks", verifyFirebaseToken, verifyBuyer, async (req, res) => {
 			try {
 				const newTask = req.body;
-				console.log("New Task Payload:", newTask);
+				// console.log("New Task Payload:", newTask);
 				newTask.total_workers = newTask?.required_workers;
 				newTask.createdAt = new Date().toISOString();
 				newTask.updatedAt = new Date().toISOString();
 				newTask.status = "active";
 				const result = await tasksCollection.insertOne(newTask);
-				console.log("Task created successfully:", result);
+				// console.log("Task created successfully:", result);
 				res.send(result);
 			} catch (err) {
-				console.log("Error creating task:", err);
+				// console.log("Error creating task:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
@@ -243,7 +238,7 @@ async function run() {
 				const result = await tasksCollection.updateOne(filter, updateDoc);
 				res.send(result);
 			} catch (err) {
-				console.error("Update Task Error:", err);
+				// console.error("Update Task Error:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
@@ -262,7 +257,7 @@ async function run() {
 					clientSecret: paymentIntent.client_secret,
 				});
 			} catch (error) {
-				console.error("Error creating payment intent:", error);
+				// console.error("Error creating payment intent:", error);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
@@ -275,7 +270,7 @@ async function run() {
 				const result = await paymentsCollection.insertOne(paymentData);
 				res.send(result);
 			} catch (error) {
-				console.error("Error saving payment:", error);
+				// console.error("Error saving payment:", error);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
@@ -293,7 +288,7 @@ async function run() {
 				const tasks = await tasksCollection.find({ required_workers: { $gt: 0 } }).toArray();
 				res.send(tasks);
 			} catch (err) {
-				console.error("Error fetching tasks for worker:", err);
+				// console.error("Error fetching tasks for worker:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
@@ -309,7 +304,7 @@ async function run() {
 				}
 				res.send(task);
 			} catch (err) {
-				console.error("Error fetching single task:", err);
+				// console.error("Error fetching single task:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
@@ -333,7 +328,7 @@ async function run() {
 
 				res.send(result);
 			} catch (err) {
-				console.error("Error saving submission:", err);
+				// console.error("Error saving submission:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
@@ -381,7 +376,7 @@ async function run() {
 				const result = await submissionsCollection.find(query).toArray();
 				res.send(result);
 			} catch (err) {
-				console.error("Error fetching submissions:", err);
+				// console.error("Error fetching submissions:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
@@ -390,13 +385,13 @@ async function run() {
 		app.post("/withdrawals", verifyFirebaseToken, verifyWorker, async (req, res) => {
 			try {
 				const newWithdrawal = req.body;
-				console.log("New Withdrawal Payload:", newWithdrawal);
+				// console.log("New Withdrawal Payload:", newWithdrawal);
 				newWithdrawal.status = "pending";
 				// Insert the withdrawal
 				const result = await withdrawalsCollection.insertOne(newWithdrawal);
 				res.send(result);
 			} catch (err) {
-				console.error("Error saving withdrawal:", err);
+				// console.error("Error saving withdrawal:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
@@ -409,7 +404,7 @@ async function run() {
 				const result = await withdrawalsCollection.find(query).toArray();
 				res.send(result);
 			} catch (err) {
-				console.error("Error fetching withdrawals:", err);
+				// console.error("Error fetching withdrawals:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
@@ -449,7 +444,7 @@ async function run() {
 
 				res.send({ result });
 			} catch (err) {
-				console.error("Submission status update error:", err);
+				// console.error("Submission status update error:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
@@ -461,7 +456,7 @@ async function run() {
 				const result = await submissionsCollection.find({ buyer_email: email }).toArray();
 				res.send(result);
 			} catch (err) {
-				console.error("Error fetching buyer submissions:", err);
+				// console.error("Error fetching buyer submissions:", err);
 				res.status(500).send({ message: "Internal Server Error" });
 			}
 		});
@@ -512,7 +507,7 @@ async function run() {
 					await notificationsCollection.insertOne({
 						message: `Your withdrawal of ${withdrawal.withdrawal_amount}$ has been approved.`,
 						toEmail: withdrawal.worker_email,
-						actionRoute: "/dashboard",
+						actionRoute: "/dashboard/approved-submissions",
 						time: new Date(),
 					});
 				}
@@ -617,7 +612,7 @@ async function run() {
 		app.get("/notifications", verifyFirebaseToken, async (req, res) => {
 			try {
 				const email = req?.decoded?.email;
-				const result = await notificationsCollection.find({ toEmail: { email } }).sort({ time: -1 }).toArray();
+				const result = await notificationsCollection.find({ toEmail:  email }).sort({ time: -1 }).toArray();
 				res.send(result);
 			} catch (error) {
 				res.status(500).send({ message: "Failed to get notifications: " + error.message });
@@ -625,8 +620,8 @@ async function run() {
 		});
 
 		// Send a ping to confirm a successful connection
-		await client.db("admin").command({ ping: 1 });
-		console.log("Pinged your deployment. You successfully connected to MongoDB!");
+		// await client.db("admin").command({ ping: 1 });
+		// console.log("Pinged your deployment. You successfully connected to MongoDB!");
 	} finally {
 		// Ensures that the client will close when you finish/error
 		// await client.close();
