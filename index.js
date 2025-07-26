@@ -549,8 +549,18 @@ async function run() {
 			try {
 				const userId = req.params.id;
 				const filter = { _id: new ObjectId(userId) };
+
+				const user = await usersCollection.findOne(filter);
+				if (!user) {
+					return res.status(404).send({ message: "User not found" });
+				}
+				// delete user from firebase
+				await admin.auth().deleteUser(user?.uid);
+
+				// Delete from mongoDB
 				const result = await usersCollection.deleteOne(filter);
-				res.send(result);
+
+				res.send({ message: "User deleted successfully", result });
 			} catch (err) {
 				res.status(500).send({ message: "Failed to delete user: " + err.message });
 			}
