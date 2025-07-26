@@ -612,10 +612,28 @@ async function run() {
 		app.get("/notifications", verifyFirebaseToken, async (req, res) => {
 			try {
 				const email = req?.decoded?.email;
-				const result = await notificationsCollection.find({ toEmail:  email }).sort({ time: -1 }).toArray();
+				const result = await notificationsCollection.find({ toEmail: email }).sort({ time: -1 }).toArray();
 				res.send(result);
 			} catch (error) {
 				res.status(500).send({ message: "Failed to get notifications: " + error.message });
+			}
+		});
+
+		app.patch("/update-profile", verifyFirebaseToken, async (req, res) => {
+			try {
+				const email = req.decoded?.email;
+				const { name, photoURL } = req.body;
+				const query = { email };
+				const result = await usersCollection.updateOne(query, {
+					$set: {
+						name,
+						photoURL,
+						updatedAt: new Date().toISOString(),
+					},
+				});
+				res.send(result);
+			} catch (error) {
+				res.status(500).send({ message: "Failed to update profile: " + error.message });
 			}
 		});
 
