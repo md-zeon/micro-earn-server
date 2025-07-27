@@ -134,30 +134,34 @@ async function run() {
 
 		// get user role
 		app.get("/user/role", verifyFirebaseToken, async (req, res) => {
-			const email = req.decoded.email;
-			if (!email) {
-				return res.status(403).send({ message: "Forbidden access" });
+			try {
+				const email = req.decoded.email;
+				const query = { email: email };
+				const user = await usersCollection.findOne(query);
+				if (!user) {
+					return res.status(404).send({ message: "User Not Found" });
+				}
+				res.send({ role: user?.role });
+			} catch (error) {
+				console.error("Error getting user role:", error);
+				res.status(500).send({ message: "Internal Server Error" });
 			}
-			const query = { email: email };
-			const user = await usersCollection.findOne(query);
-			if (!user) {
-				return res.status(404).send({ message: "User Not Found" });
-			}
-			res.send({ role: user?.role });
 		});
 
 		// get available Coins
 		app.get("/available-coins", verifyFirebaseToken, async (req, res) => {
-			const email = req.decoded.email;
-			if (!email) {
-				return res.status(403).send({ message: "Forbidden access" });
+			try {
+				const email = req.decoded.email;
+				const query = { email: email };
+				const user = await usersCollection.findOne(query);
+				if (!user) {
+					return res.status(404).send({ message: "User Not Found" });
+				}
+				res.send({ microCoins: user?.microCoins });
+			} catch (error) {
+				console.error("Error getting available coins:", error);
+				res.status(500).send({ message: "Internal Server Error" });
 			}
-			const query = { email: email };
-			const user = await usersCollection.findOne(query);
-			if (!user) {
-				return res.status(404).send({ message: "User Not Found" });
-			}
-			res.send({ microCoins: user?.microCoins });
 		});
 
 		// Update Micro Coins (increase/decrease)
