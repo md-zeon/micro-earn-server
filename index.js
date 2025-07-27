@@ -135,7 +135,7 @@ async function run() {
 		// get user role
 		app.get("/user/role", verifyFirebaseToken, async (req, res) => {
 			try {
-				const email = req.decoded.email;
+				const email = req?.decoded?.email;
 				const query = { email: email };
 				const user = await usersCollection.findOne(query);
 				if (!user) {
@@ -151,7 +151,7 @@ async function run() {
 		// get available Coins
 		app.get("/available-coins", verifyFirebaseToken, async (req, res) => {
 			try {
-				const email = req.decoded.email;
+				const email = req?.decoded?.email;
 				const query = { email: email };
 				const user = await usersCollection.findOne(query);
 				if (!user) {
@@ -166,8 +166,8 @@ async function run() {
 
 		// Update Micro Coins (increase/decrease)
 		app.patch("/update-coins/:email", verifyFirebaseToken, async (req, res) => {
-			const email = req.params.email;
-			const { coinsToUpdate, status } = req.body;
+			const email = req?.params?.email;
+			const { coinsToUpdate, status } = req?.body || {};
 			const filter = { email: email };
 			const updateDoc = {
 				$inc: {
@@ -181,7 +181,7 @@ async function run() {
 		// Create New Task (Buyer)
 		app.post("/tasks", verifyFirebaseToken, verifyBuyer, async (req, res) => {
 			try {
-				const newTask = req.body;
+				const newTask = req?.body || {};
 				// console.log("New Task Payload:", newTask);
 				newTask.total_workers = newTask?.required_workers;
 				newTask.createdAt = new Date().toISOString();
@@ -198,7 +198,7 @@ async function run() {
 
 		// GET buyer's tasks (sorted by deadline DESC)
 		app.get("/my-tasks", verifyFirebaseToken, verifyBuyer, async (req, res) => {
-			const email = req.decoded?.email;
+			const email = req?.decoded?.email;
 			const tasks = await tasksCollection.find({ posted_by: email }).sort({ completion_deadline: -1 }).toArray();
 			res.send(tasks);
 		});
@@ -206,7 +206,7 @@ async function run() {
 		// Delete Task
 		app.delete("/tasks/:id", verifyFirebaseToken, verifyBuyer, async (req, res) => {
 			try {
-				const taskId = req.params.id;
+				const taskId = req?.params?.id;
 				const query = { _id: new ObjectId(taskId) };
 				const task = await tasksCollection.findOne(query);
 				if (!task) {
@@ -223,8 +223,8 @@ async function run() {
 		// Update Task
 		app.patch("/tasks/:id", verifyFirebaseToken, verifyBuyer, async (req, res) => {
 			try {
-				const taskId = req.params.id;
-				const updates = req.body;
+				const taskId = req?.params?.id;
+				const updates = req?.body || {};
 				const filter = { _id: new ObjectId(taskId) };
 				const task = await tasksCollection.findOne(filter);
 				if (!task) {
@@ -232,9 +232,9 @@ async function run() {
 				}
 				const updateDoc = {
 					$set: {
-						task_title: updates.task_title,
-						task_detail: updates.task_detail,
-						submission_info: updates.submission_info,
+						task_title: updates?.task_title,
+						task_detail: updates?.task_detail,
+						submission_info: updates?.submission_info,
 						updatedAt: new Date().toISOString(),
 					},
 				};
@@ -249,7 +249,7 @@ async function run() {
 
 		// Payment Intent
 		app.post("/create-payment-intent", verifyFirebaseToken, async (req, res) => {
-			const { amount } = req.body;
+			const { amount } = req?.body || {};
 			const paymentAmount = parseInt(amount * 100);
 			try {
 				const paymentIntent = await stripe.paymentIntents.create({
@@ -258,7 +258,7 @@ async function run() {
 					payment_method_types: ["card"],
 				});
 				res.send({
-					clientSecret: paymentIntent.client_secret,
+					clientSecret: paymentIntent?.client_secret,
 				});
 			} catch (error) {
 				// console.error("Error creating payment intent:", error);
@@ -269,7 +269,7 @@ async function run() {
 		// Save payment info
 		app.post("/payments", verifyFirebaseToken, verifyBuyer, async (req, res) => {
 			try {
-				const paymentData = req.body;
+				const paymentData = req?.body || {};
 				paymentData.createdAt = new Date().toISOString();
 				const result = await paymentsCollection.insertOne(paymentData);
 				res.send(result);
@@ -281,7 +281,7 @@ async function run() {
 
 		// get All Payments
 		app.get("/payments", verifyFirebaseToken, verifyBuyer, async (req, res) => {
-			const email = req.decoded?.email;
+			const email = req?.decoded?.email;
 			const payments = await paymentsCollection.find({ buyer_email: email }).sort({ payment_date: -1 }).toArray();
 			res.send(payments);
 		});
@@ -300,7 +300,7 @@ async function run() {
 		// Get single task by ID
 		app.get("/tasks/:id", verifyFirebaseToken, async (req, res) => {
 			try {
-				const taskId = req.params.id;
+				const taskId = req?.params?.id;
 				const query = { _id: new ObjectId(taskId) };
 				const task = await tasksCollection.findOne(query);
 				if (!task) {
@@ -316,7 +316,7 @@ async function run() {
 		// Submit Task (Worker)
 		app.post("/submissions", verifyFirebaseToken, verifyWorker, async (req, res) => {
 			try {
-				const newSubmission = req.body;
+				const newSubmission = req?.body || {};
 				newSubmission.updatedAt = new Date().toISOString();
 				newSubmission.status = "pending";
 				// Insert the submission
@@ -324,8 +324,8 @@ async function run() {
 
 				// Notify buyer
 				await notificationsCollection.insertOne({
-					message: `You have a new submission for "${newSubmission.task_title}".`,
-					toEmail: newSubmission.buyer_email,
+					message: `You have a new submission for "${newSubmission?.task_title}".`,
+					toEmail: newSubmission?.buyer_email,
 					actionRoute: "/dashboard",
 					time: new Date(),
 				});
@@ -340,8 +340,8 @@ async function run() {
 		// Update Workers (increase/decrease)
 		app.patch("/update-workers/:id", verifyFirebaseToken, async (req, res) => {
 			try {
-				const taskId = req.params.id;
-				const { status } = req.body;
+				const taskId = req?.params?.id;
+				const { status } = req?.body || {};
 
 				const filter = { _id: new ObjectId(taskId) };
 				const task = await tasksCollection.findOne(filter);
@@ -350,7 +350,7 @@ async function run() {
 					return res.status(404).send({ message: "Task not found" });
 				}
 
-				let newCount = task.required_workers;
+				let newCount = task?.required_workers || 0;
 
 				if (status === "decrease") newCount--;
 				else if (status === "increase") newCount++;
@@ -368,7 +368,7 @@ async function run() {
 				const result = await tasksCollection.updateOne(filter, updateDoc);
 				res.send(result);
 			} catch (err) {
-				res.status(500).send({ message: "Failed to update workers: " + err.message });
+				res.status(500).send({ message: "Failed to update workers: " + err?.message });
 			}
 		});
 
@@ -388,7 +388,7 @@ async function run() {
 		// Create New WithDrawal
 		app.post("/withdrawals", verifyFirebaseToken, verifyWorker, async (req, res) => {
 			try {
-				const newWithdrawal = req.body;
+				const newWithdrawal = req?.body || {};
 				// console.log("New Withdrawal Payload:", newWithdrawal);
 				newWithdrawal.status = "pending";
 				// Insert the withdrawal
@@ -416,7 +416,7 @@ async function run() {
 		// accept / reject submissions
 		app.patch("/submissions/status-update", verifyFirebaseToken, verifyBuyer, async (req, res) => {
 			try {
-				const { submissionId, status } = req.body;
+				const { submissionId, status } = req?.body || {};
 				const filter = { _id: new ObjectId(submissionId) };
 				const submission = await submissionsCollection.findOne(filter);
 				if (!submission) return res.status(404).send({ message: "Submission not found!" });
@@ -429,18 +429,18 @@ async function run() {
 				});
 
 				// Fetch task for details
-				const task = await tasksCollection.findOne({ _id: new ObjectId(submission.task_id) });
-				if (task && submission.worker_email) {
+				const task = await tasksCollection.findOne({ _id: new ObjectId(submission?.task_id) });
+				if (task && submission?.worker_email) {
 					let message = "";
 					if (status === "approved") {
-						message = `You have earned ${task.payable_amount} coins from ${submission.buyer_name} for completing "${task.task_title}".`;
+						message = `You have earned ${task?.payable_amount} coins from ${submission?.buyer_name} for completing "${task?.task_title}".`;
 					} else if (status === "rejected") {
-						message = `Your submission for "${task.task_title}" was rejected by ${submission.buyer_name}.`;
+						message = `Your submission for "${task?.task_title}" was rejected by ${submission?.buyer_name}.`;
 					}
 
 					await notificationsCollection.insertOne({
 						message,
-						toEmail: submission.worker_email,
+						toEmail: submission?.worker_email,
 						actionRoute: "/dashboard",
 						time: new Date(),
 					});
@@ -469,9 +469,9 @@ async function run() {
 			const workers = await usersCollection.countDocuments({ role: "worker" });
 			const buyers = await usersCollection.countDocuments({ role: "buyer" });
 			const allUsers = await usersCollection.find().toArray();
-			const totalCoins = allUsers.reduce((sum, u) => sum + (u.microCoins || 0), 0);
+			const totalCoins = allUsers?.reduce((sum, u) => sum + (u?.microCoins || 0), 0) || 0;
 			const payments = await paymentsCollection.find().toArray();
-			const totalPayments = payments.reduce((sum, p) => sum + p.amount_paid, 0);
+			const totalPayments = payments?.reduce((sum, p) => sum + (p?.amount_paid || 0), 0) || 0;
 
 			res.send({ totalWorkers: workers, totalBuyers: buyers, totalCoins, totalPayments });
 		});
@@ -495,8 +495,8 @@ async function run() {
 
 		app.patch("/admin/approve-withdraw/:id", verifyFirebaseToken, verifyAdmin, async (req, res) => {
 			try {
-				const withdrawId = req.params.id;
-				const { status } = req.body;
+				const withdrawId = req?.params?.id;
+				const { status } = req?.body || {};
 				const filter = { _id: new ObjectId(withdrawId) };
 
 				// Update the withdrawal
@@ -509,8 +509,8 @@ async function run() {
 				const withdrawal = await withdrawalsCollection.findOne(filter);
 				if (withdrawal && status === "approved") {
 					await notificationsCollection.insertOne({
-						message: `Your withdrawal of ${withdrawal.withdrawal_amount}$ has been approved.`,
-						toEmail: withdrawal.worker_email,
+						message: `Your withdrawal of ${withdrawal?.withdrawal_amount}$ has been approved.`,
+						toEmail: withdrawal?.worker_email,
 						actionRoute: "/dashboard",
 						time: new Date(),
 					});
@@ -518,7 +518,7 @@ async function run() {
 
 				res.send(result);
 			} catch (err) {
-				res.status(500).send({ message: "Failed to approve withdraw request: " + err.message });
+				res.status(500).send({ message: "Failed to approve withdraw request: " + err?.message });
 			}
 		});
 
@@ -535,8 +535,8 @@ async function run() {
 		// Update user role
 		app.patch("/update-role/user/:id", verifyFirebaseToken, verifyAdmin, async (req, res) => {
 			try {
-				const userId = req.params.id;
-				const { role } = req.body;
+				const userId = req?.params?.id;
+				const { role } = req?.body || {};
 				const filter = { _id: new ObjectId(userId) };
 				const updateDoc = {
 					$set: { role: role, updatedAt: new Date().toISOString() },
@@ -544,14 +544,14 @@ async function run() {
 				const result = await usersCollection.updateOne(filter, updateDoc);
 				res.send(result);
 			} catch (err) {
-				res.status(500).send({ message: "Failed to update user role: " + err.message });
+				res.status(500).send({ message: "Failed to update user role: " + err?.message });
 			}
 		});
 
 		// delete a user
 		app.delete("/user/:id", verifyFirebaseToken, verifyAdmin, async (req, res) => {
 			try {
-				const userId = req.params.id;
+				const userId = req?.params?.id;
 				const filter = { _id: new ObjectId(userId) };
 
 				const user = await usersCollection.findOne(filter);
@@ -566,7 +566,7 @@ async function run() {
 
 				res.send({ message: "User deleted successfully", result });
 			} catch (err) {
-				res.status(500).send({ message: "Failed to delete user: " + err.message });
+				res.status(500).send({ message: "Failed to delete user: " + err?.message });
 			}
 		});
 
@@ -583,7 +583,7 @@ async function run() {
 		// DELETE task by Admin
 		app.delete("/admin/task/:id", verifyFirebaseToken, verifyAdmin, async (req, res) => {
 			try {
-				const id = req.params.id;
+				const id = req?.params?.id;
 				const query = { _id: new ObjectId(id) };
 
 				// Get the task
@@ -591,14 +591,14 @@ async function run() {
 				if (!task) return res.status(404).send({ message: "Task not found" });
 
 				// If task is active, refund buyer
-				if (task.status === "active") {
-					const buyer_email = task.posted_by;
-					const total_amount = task.required_workers * task.payable_amount;
+				if (task?.status === "active") {
+					const buyer_email = task?.posted_by;
+					const total_amount = (task?.required_workers || 0) * (task?.payable_amount || 0);
 
 					// Fetch buyer
 					const buyer = await usersCollection.findOne({ email: buyer_email });
 					if (buyer) {
-						const updatedCoins = (buyer.microCoins || 0) + total_amount;
+						const updatedCoins = (buyer?.microCoins || 0) + total_amount;
 						await usersCollection.updateOne({ email: buyer_email }, { $set: { microCoins: updatedCoins } });
 					}
 				}
@@ -607,7 +607,7 @@ async function run() {
 				const result = await tasksCollection.deleteOne(query);
 				res.send(result);
 			} catch (err) {
-				res.status(500).send({ message: "Failed to delete task: " + err.message });
+				res.status(500).send({ message: "Failed to delete task: " + err?.message });
 			}
 		});
 
@@ -635,8 +635,8 @@ async function run() {
 
 		app.patch("/update-profile", verifyFirebaseToken, async (req, res) => {
 			try {
-				const email = req.decoded?.email;
-				const { name, photoURL } = req.body;
+				const email = req?.decoded?.email;
+				const { name, photoURL } = req?.body || {};
 				const query = { email };
 				const result = await usersCollection.updateOne(query, {
 					$set: {
@@ -647,7 +647,7 @@ async function run() {
 				});
 				res.send(result);
 			} catch (error) {
-				res.status(500).send({ message: "Failed to update profile: " + error.message });
+				res.status(500).send({ message: "Failed to update profile: " + error?.message });
 			}
 		});
 
