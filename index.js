@@ -393,6 +393,15 @@ async function run() {
 				newWithdrawal.status = "pending";
 				// Insert the withdrawal
 				const result = await withdrawalsCollection.insertOne(newWithdrawal);
+
+				// Notify Admin
+				const admin = await usersCollection.findOne({ role: "admin" });
+				await notificationsCollection.insertOne({
+					message: `You have a new withdrawal request of ${newWithdrawal?.withdrawal_amount}$ from ${newWithdrawal?.worker_name}.`,
+					toEmail: admin?.email,
+					actionRoute: "/dashboard",
+					time: new Date(),
+				});
 				res.send(result);
 			} catch (err) {
 				// console.error("Error saving withdrawal:", err);
