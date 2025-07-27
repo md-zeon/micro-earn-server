@@ -401,7 +401,7 @@ async function run() {
 			try {
 				const worker_email = req.decoded?.email;
 				const query = { worker_email };
-				const result = await withdrawalsCollection.find(query).toArray();
+				const result = await withdrawalsCollection.find(query).sort({ withdraw_date: -1 }).toArray();
 				res.send(result);
 			} catch (err) {
 				// console.error("Error fetching withdrawals:", err);
