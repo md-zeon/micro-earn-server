@@ -30,7 +30,6 @@ The server side of MicroEarn powers a micro-tasking platform that enables users 
 * **🧑‍💼 User Management:** Admins can manage users and tasks with full CRUD support.
 * **🔝 Top Workers Endpoint:** Fetches top 6 Workers by coins.
 * **🔐 Environment Variable Security:** Uses `dotenv` to secure sensitive information.
-* **📜 Minimum 12 Commits:** Version control with clear commit history.
 
 ## 🧰 Tech Stack
 
