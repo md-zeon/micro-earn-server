@@ -511,7 +511,7 @@ async function run() {
 					await notificationsCollection.insertOne({
 						message: `Your withdrawal of ${withdrawal.withdrawal_amount}$ has been approved.`,
 						toEmail: withdrawal.worker_email,
-						actionRoute: "/dashboard/approved-submissions",
+						actionRoute: "/dashboard",
 						time: new Date(),
 					});
 				}
