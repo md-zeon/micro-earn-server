@@ -578,7 +578,42 @@ async function run() {
 			}
 		});
 
+		// Buyer payment statistics
+		app.get("/buyer/payment-stats", verifyFirebaseToken, verifyBuyer, async (req, res) => {
+			try {
+				const buyer_email = req.decoded?.email;
 
+				// Get all payments for the buyer
+				const payments = await paymentsCollection.find({ buyer_email: buyer_email }).toArray();
+
+				// Group payments by month
+				const paymentsByMonth = {};
+				payments.forEach((payment) => {
+					const date = new Date(payment.createdAt);
+					const month = date.toLocaleString("default", { month: "short" });
+					const year = date.getFullYear();
+					const key = `${month} ${year}`;
+
+					if (!paymentsByMonth[key]) {
+						paymentsByMonth[key] = 0;
+					}
+					paymentsByMonth[key] += payment.amount_paid || 0;
+				});
+
+				// Convert to array format for chart
+				const paymentData = Object.entries(paymentsByMonth).map(([name, payments]) => ({
+					name,
+					payments,
+				}));
+
+				res.send(paymentData);
+			} catch (error) {
+				console.error("Failed to fetch buyer payment stats:", error);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
+		
 
 		app.get("/admin/stats", verifyFirebaseToken, verifyAdmin, async (req, res) => {
 			const workers = await usersCollection.countDocuments({ role: "worker" });
