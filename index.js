@@ -613,7 +613,58 @@ async function run() {
 			}
 		});
 
-		
+		// Admin task statistics
+		app.get("/admin/task-stats", verifyFirebaseToken, verifyAdmin, async (req, res) => {
+			try {
+				// Get all tasks
+				const tasks = await tasksCollection.find().toArray();
+
+				// Group tasks by creation month
+				const tasksByMonth = {};
+				tasks.forEach((task) => {
+					const date = new Date(task.createdAt);
+					const month = date.toLocaleString("default", { month: "short" });
+					const year = date.getFullYear();
+					const key = `${month} ${year}`;
+
+					if (!tasksByMonth[key]) {
+						tasksByMonth[key] = 0;
+					}
+					tasksByMonth[key]++;
+				});
+
+				// Convert to array format for chart
+				const taskData = Object.entries(tasksByMonth).map(([name, tasks]) => ({
+					name,
+					tasks,
+				}));
+
+				res.send(taskData);
+			} catch (error) {
+				console.error("Failed to fetch admin task stats:", error);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
+		// Admin user statistics
+		app.get("/admin/user-stats", verifyFirebaseToken, verifyAdmin, async (req, res) => {
+			try {
+				// Get user counts by role
+				const workers = await usersCollection.countDocuments({ role: "worker" });
+				const buyers = await usersCollection.countDocuments({ role: "buyer" });
+
+				// Convert to array format for chart
+				const userData = [
+					{ name: "Workers", value: workers },
+					{ name: "Buyers", value: buyers },
+				];
+
+				res.send(userData);
+			} catch (error) {
+				console.error("Failed to fetch admin user stats:", error);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
 
 		app.get("/admin/stats", verifyFirebaseToken, verifyAdmin, async (req, res) => {
 			const workers = await usersCollection.countDocuments({ role: "worker" });
