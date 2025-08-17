@@ -671,6 +671,24 @@ async function run() {
 			}
 		});
 
+		// total stats data
+		app.get("/stats", async (req, res) => {
+			// get total workers, buyers, tasks completed, total coins
+			const totalWorkers = await usersCollection.countDocuments({ role: "worker" });
+			const totalBuyers = await usersCollection.countDocuments({ role: "buyer" });
+			const totalTasks = await tasksCollection.countDocuments({ status: "completed" });
+			const totalCoins = await usersCollection
+				.aggregate([{ $match: { role: "worker" } }, { $group: { _id: null, total: { $sum: "$microCoins" } } }])
+				.toArray();
+
+			res.send({
+				totalWorkers,
+				totalBuyers,
+				totalTasks,
+				totalCoins: totalCoins[0]?.total || 0,
+			});
+		});
+
 		// Send a ping to confirm a successful connection
 		// await client.db("admin").command({ ping: 1 });
 		// console.log("Pinged your deployment. You successfully connected to MongoDB!");
