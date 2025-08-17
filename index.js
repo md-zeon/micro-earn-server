@@ -545,6 +545,41 @@ async function run() {
 			}
 		});
 
+		// Buyer task statistics
+		app.get("/buyer/task-stats", verifyFirebaseToken, verifyBuyer, async (req, res) => {
+			try {
+				const buyer_email = req.decoded?.email;
+
+				// Get all tasks for the buyer
+				const tasks = await tasksCollection.find({ posted_by: buyer_email }).toArray();
+
+				// Count tasks by status
+				const statusCounts = {
+					active: 0,
+					completed: 0,
+				};
+
+				tasks.forEach((task) => {
+					if (statusCounts.hasOwnProperty(task.status)) {
+						statusCounts[task.status]++;
+					}
+				});
+
+				// Convert to array format for chart
+				const taskStats = Object.entries(statusCounts).map(([name, value]) => ({
+					name: name.charAt(0).toUpperCase() + name.slice(1),
+					value,
+				}));
+
+				res.send(taskStats);
+			} catch (error) {
+				console.error("Failed to fetch buyer task stats:", error);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
+
+
 		app.get("/admin/stats", verifyFirebaseToken, verifyAdmin, async (req, res) => {
 			const workers = await usersCollection.countDocuments({ role: "worker" });
 			const buyers = await usersCollection.countDocuments({ role: "buyer" });
