@@ -474,6 +474,77 @@ async function run() {
 			}
 		});
 
+		// Worker earnings statistics
+		app.get("/worker/earnings-stats", verifyFirebaseToken, verifyWorker, async (req, res) => {
+			try {
+				const worker_email = req.decoded?.email;
+
+				// Get approved submissions for earnings data
+				const approvedSubmissions = await submissionsCollection
+					.find({ worker_email: worker_email, status: "approved" })
+					.toArray();
+
+				// Group earnings by month
+				const earningsByMonth = {};
+				approvedSubmissions.forEach((submission) => {
+					const date = new Date(submission.updatedAt);
+					const month = date.toLocaleString("default", { month: "short" });
+					const year = date.getFullYear();
+					const key = `${month} ${year}`;
+
+					if (!earningsByMonth[key]) {
+						earningsByMonth[key] = 0;
+					}
+					earningsByMonth[key] += submission.payable_amount || 0;
+				});
+
+				// Convert to array format for chart
+				const earningsData = Object.entries(earningsByMonth).map(([name, earnings]) => ({
+					name,
+					earnings,
+				}));
+
+				res.send(earningsData);
+			} catch (error) {
+				console.error("Failed to fetch worker earnings stats:", error);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
+		// Worker submission statistics
+		app.get("/worker/submission-stats", verifyFirebaseToken, verifyWorker, async (req, res) => {
+			try {
+				const worker_email = req.decoded?.email;
+
+				// Get all submissions for the worker
+				const submissions = await submissionsCollection.find({ worker_email: worker_email }).toArray();
+
+				// Count submissions by status
+				const statusCounts = {
+					approved: 0,
+					pending: 0,
+					rejected: 0,
+				};
+
+				submissions.forEach((submission) => {
+					if (statusCounts.hasOwnProperty(submission.status)) {
+						statusCounts[submission.status]++;
+					}
+				});
+
+				// Convert to array format for chart
+				const submissionStats = Object.entries(statusCounts).map(([name, value]) => ({
+					name: name.charAt(0).toUpperCase() + name.slice(1),
+					value,
+				}));
+
+				res.send(submissionStats);
+			} catch (error) {
+				console.error("Failed to fetch worker submission stats:", error);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
 		app.get("/admin/stats", verifyFirebaseToken, verifyAdmin, async (req, res) => {
 			const workers = await usersCollection.countDocuments({ role: "worker" });
 			const buyers = await usersCollection.countDocuments({ role: "buyer" });
