@@ -880,6 +880,7 @@ async function run() {
 				totalCoins: totalCoins[0]?.total || 0,
 			});
 		});
+		
 
 		// Send a ping to confirm a successful connection
 		// await client.db("admin").command({ ping: 1 });
