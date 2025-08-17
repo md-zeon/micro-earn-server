@@ -660,6 +660,17 @@ async function run() {
 			}
 		});
 
+		// All Tasks (Public Route)
+		app.get("/tasks", async (req, res) => {
+			try {
+				const tasks = await tasksCollection.find({ required_workers: { $gt: 0 } }).toArray();
+				res.send(tasks);
+			} catch (err) {
+				// console.error("Error fetching tasks for worker:", err);
+				res.status(500).send({ message: "Internal Server Error" });
+			}
+		});
+
 		// Send a ping to confirm a successful connection
 		// await client.db("admin").command({ ping: 1 });
 		// console.log("Pinged your deployment. You successfully connected to MongoDB!");
