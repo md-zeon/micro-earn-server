@@ -5,7 +5,6 @@ const paymentsController = require("./payments.controller");
 const router = express.Router();
 
 // Payment Intent
-//! WARN: /create-payment-intent => /payments/create-payment-intent (need to change in frontend)
 router.post(
 	"/create-payment-intent",
 	verifyFirebaseToken,
