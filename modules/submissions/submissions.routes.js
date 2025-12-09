@@ -30,7 +30,6 @@ router.patch(
 );
 
 // Get all submissions for a buyer's tasks
-//! WARN: /buyer-submissions => /submissions/buyer (need to change the front-end accordingly)
 router.get(
 	"/buyer",
 	verifyFirebaseToken,
