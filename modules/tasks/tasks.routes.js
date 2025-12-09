@@ -13,7 +13,6 @@ router.post("/", verifyFirebaseToken, verifyBuyer, tasksController.createTask);
 router.get("/", tasksController.getAllTasks);
 
 // GET ALL TASKS (Admin)
-//! WARN /admin/tasks => /tasks/admin
 router.get(
 	"/admin",
 	verifyFirebaseToken,
@@ -22,7 +21,6 @@ router.get(
 );
 
 // GET buyer's tasks (sorted by deadline DESC)
-//! WARN: /my-tasks => /tasks/my-tasks (need to change in the frontend)
 router.get(
 	"/my-tasks",
 	verifyFirebaseToken,
@@ -50,7 +48,6 @@ router.patch(
 );
 
 // Worker Routes
-//! WARN /tasks-for-worker => /tasks/tasks-for-worker
 router.get(
 	"/tasks-for-worker",
 	verifyFirebaseToken,
@@ -59,7 +56,6 @@ router.get(
 );
 
 // Update Workers (increase/decrease)
-//! WARN /update-workers/:id => /tasks/update-workers/:id
 router.patch(
 	"/update-workers/:id",
 	verifyFirebaseToken,
@@ -67,7 +63,6 @@ router.patch(
 );
 
 // DELETE task by Admin
-//! WARN /admin/task/:id => /tasks/admin/:id
 router.delete(
 	"/admin/:id",
 	verifyFirebaseToken,
