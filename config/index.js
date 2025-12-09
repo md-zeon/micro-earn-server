@@ -10,6 +10,7 @@ const config = {
 	stripe_secret_key: process.env.STRIPE_SECRET_KEY,
 	fb_service_key: process.env.FB_SERVICE_KEY,
 	mongodb_uri: process.env.MONGODB_URI,
+	node_env: process.env.NODE_ENV || "production",
 };
 
 module.exports = config;

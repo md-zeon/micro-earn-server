@@ -8,6 +8,7 @@ const submissionRoutes = require("./modules/submissions/submissions.routes");
 const withdrawalsRoutes = require("./modules/withdrawals/withdrawals.routes");
 const statisticsRoutes = require("./modules/statistics/statistics.routes");
 const notificationsRoutes = require("./modules/notifications/notifications.routes");
+const config = require("./config");
 const app = express();
 
 // Middleware
@@ -17,7 +18,9 @@ app.use(express.json());
 async function run() {
 	try {
 		// Connect the client to the server	(optional starting in v4.7)
-		await connectDB();
+		if (config.node_env === "development") {
+			await connectDB();
+		}
 
 		// User Routes
 		app.use("/user", userRoutes);
