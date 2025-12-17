@@ -22,7 +22,7 @@ router.get(
 
 // Update Micro Coins (increase/decrease)
 router.patch(
-	"/user/update-coins/:email",
+	"/update-coins/:email",
 	verifyFirebaseToken,
 	userController.updateMicroCoins,
 );
