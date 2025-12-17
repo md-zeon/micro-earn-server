@@ -43,45 +43,54 @@ The server side of MicroEarn powers a micro-tasking platform that enables users 
 
 ## 📌 Endpoints
 
-| Endpoint                     | Method | Description                                | Role Access   |
-| ---------------------------- | ------ | ------------------------------------------ | ------------- |
-| /user                        | POST   | Creates or updates user with initial coins | All           |
-| /user/role                   | GET    | Retrieves user role                        | Authenticated |
-| /available-coins             | GET    | Fetches user’s coin balance                | Authenticated |
-| /user/update-coins/\:email   | PATCH  | Updates user coins                         | Authenticated |
-| /tasks                       | POST   | Creates a new task                         | Buyer         |
-| /my-tasks                    | GET    | Retrieves Buyer’s tasks                    | Buyer         |
-| /tasks/\:id                  | GET    | Fetches task by ID                         | Authenticated |
-| /tasks/\:id                  | PATCH  | Updates task details                       | Buyer         |
-| /tasks/\:id                  | DELETE | Deletes a task                             | Buyer         |
-| /create-payment-intent       | POST   | Creates Stripe payment intent              | Authenticated |
-| /payments                    | POST   | Saves payment details                      | Buyer         |
-| /payments                    | GET    | Retrieves Buyer’s payments                 | Buyer         |
-| /tasks-for-worker            | GET    | Lists available tasks                      | Worker        |
-| /submissions                 | POST   | Submits a task                             | Worker        |
-| /submissions                 | GET    | Retrieves Worker’s submissions             | Worker        |
-| /buyer-submissions           | GET    | Buyer views task submissions               | Buyer         |
-| /submissions/status-update   | PATCH  | Updates submission status                  | Buyer         |
-| /update-workers/\:id         | PATCH  | Updates worker count                       | Authenticated |
-| /withdrawals                 | POST   | Worker requests withdrawal                 | Worker        |
-| /withdrawals                 | GET    | Retrieves Worker withdrawal history        | Worker        |
-| /admin/stats                 | GET    | Admin dashboard stats                      | Admin         |
-| /admin/withdraw-requests     | GET    | Lists withdrawals                          | Admin         |
-| /admin/approve-withdraw/\:id | PATCH  | Approves withdrawal                        | Admin         |
-| /users                       | GET    | Lists users                                | Admin         |
-| /update-role/user/\:id       | PATCH  | Updates user role                          | Admin         |
-| /user/\:id                   | DELETE | Deletes user                               | Admin         |
-| /admin/tasks                 | GET    | Lists all tasks                            | Admin         |
-| /admin/task/\:id             | DELETE | Deletes a task (refunds coins)             | Admin         |
-| /top-workers                 | GET    | Lists top 6 Workers by coins               | Public        |
-| /notifications               | GET    | User notifications                         | Authenticated |
-| /update-profile              | PATCH  | Updates name/photo                         | Authenticated |
+| Endpoint                                  | Method | Description                  | Role Access   |
+| ----------------------------------------- | ------ | ---------------------------- | ------------- |
+| `/`                                       | GET    | Basic health check route     | Public        |
+| `/user`                                   | POST   | Add New User                 | Public        |
+| `/user`                                   | GET    | Get all users                | Admin         |
+| `/user/role`                              | GET    | Get user role                | Authenticated |
+| `/user/available-coins`                   | GET    | Get available coins          | Authenticated |
+| `/user/update-coins/:email`               | PATCH  | Update micro coins           | Authenticated |
+| `/user/:id`                               | DELETE | Delete a user                | Admin         |
+| `/user/update-role/:id`                   | PATCH  | Update user role             | Admin         |
+| `/user/top-workers`                       | GET    | Get top 6 workers            | Public        |
+| `/user/update-profile`                    | PATCH  | Update user profile          | Authenticated |
+| `/tasks`                                  | POST   | Create new task              | Buyer         |
+| `/tasks`                                  | GET    | Get all tasks                | Public        |
+| `/tasks/admin`                            | GET    | Get all tasks for admin      | Admin         |
+| `/tasks/my-tasks`                         | GET    | Get buyer's tasks            | Buyer         |
+| `/tasks/:id`                              | GET    | Get single task by ID        | Authenticated |
+| `/tasks/:id`                              | DELETE | Delete task                  | Buyer         |
+| `/tasks/:id`                              | PATCH  | Update task                  | Buyer         |
+| `/tasks/tasks-for-worker`                 | GET    | Get tasks for worker         | Worker        |
+| `/tasks/update-workers/:id`               | PATCH  | Update workers count         | Authenticated |
+| `/tasks/admin/:id`                        | DELETE | Delete task by admin         | Admin         |
+| `/payments/create-payment-intent`         | POST   | Create payment intent        | Authenticated |
+| `/payments`                               | POST   | Save payment info            | Buyer         |
+| `/payments`                               | GET    | Get all payments             | Buyer         |
+| `/submissions`                            | POST   | Submit task                  | Worker        |
+| `/submissions`                            | GET    | Get submissions              | Worker        |
+| `/submissions/status-update`              | PATCH  | Accept/reject submissions    | Buyer         |
+| `/submissions/buyer`                      | GET    | Get buyer's submissions      | Buyer         |
+| `/withdrawals`                            | POST   | Create withdrawal request    | Worker        |
+| `/withdrawals`                            | GET    | Get withdrawals              | Worker        |
+| `/withdrawals/admin/withdraw-requests`    | GET    | Get all withdraw requests    | Admin         |
+| `/withdrawals/admin/approve-withdraw/:id` | PATCH  | Approve withdraw request     | Admin         |
+| `/statistics/worker/earnings-stats`       | GET    | Worker earnings statistics   | Worker        |
+| `/statistics/worker/submission-stats`     | GET    | Worker submission statistics | Worker        |
+| `/statistics/buyer/task-stats`            | GET    | Buyer task statistics        | Buyer         |
+| `/statistics/buyer/payment-stats`         | GET    | Buyer payment statistics     | Buyer         |
+| `/statistics/admin/task-stats`            | GET    | Admin task statistics        | Admin         |
+| `/statistics/admin/user-stats`            | GET    | Admin user statistics        | Admin         |
+| `/statistics/admin/stats`                 | GET    | Admin total statistics       | Admin         |
+| `/statistics`                             | GET    | Total statistics data        | Public        |
+| `/notifications`                          | GET    | Get notifications            | Authenticated |
 
 ## 🛠️ Installation
 
 ```bash
-git clone https://github.com/Programming-Hero-Web-Course4/b11a12-server-side-md-zeon
-cd b11a12-server-side-md-zeon
+git clone https://github.com/md-zeon/micro-earn-server.git
+cd micro-earn-server
 npm install
 ```
 
