@@ -10,6 +10,8 @@ const statisticsRoutes = require("./modules/statistics/statistics.routes");
 const notificationsRoutes = require("./modules/notifications/notifications.routes");
 const config = require("./config");
 const app = express();
+require("./config/firebase");
+require("./config/stripe");
 
 // Middleware
 app.use(cors());
